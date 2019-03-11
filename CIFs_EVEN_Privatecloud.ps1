@@ -5,41 +5,41 @@ Import-module DataOntap
 ### ---There is enough space on the storage aggregates especially the Secondary Snapmirror and DR Sites, 
 ### ---There is connectivity to all storage clusters and/or service accounts to login and administer
 
-$even_svmname            = "pcu012fs25"                                  
-$even_rootvolume         = "pcu012fs25_root"                             
-$even_prootaggr_location	= "pcuntap01c_ssd_aggr2"                        
-$even_srootaggr_location = "pcuntap01d_ssd_aggr2"                        
+$even_svmname            = ""                                  
+$even_rootvolume         = ""                             
+$even_prootaggr_location	= ""                        
+$even_srootaggr_location = ""                        
 $even_Computername 		= $even_Computername                                 
-$even_Pnode 				= "pcuntap01c"                                  
-$even_snode 				= "pcuntap01d"                                  
-$even_SVM_IP 			= "10.135.12.25"                                
-$VLAN_ID 			= "2012"                                        	
+$even_Pnode 				= ""                                  
+$even_snode 				= ""                                  
+$even_SVM_IP 			= ""                                
+$VLAN_ID 			= ""                                        	
 $Failovergroup 		= "cifs" + $Vlan_ID                                    	
-$Domainname 		= "ShorensteinPC.ysicloud.com"                  	
+$Domainname 		= ""                  	
 $Subnet_Mask 		= "255.255.255.0"                               	
-$GW 				= "10.135.12.254"                               	
+$GW 				= ""                               	
 $Broadcast_Domain 	= $Failovergroup 	                                
-$DNS1 				= "10.135.12.11"                                	
-$DNS2 				= "10.135.12.12"                                	
+$DNS1 				= ""                                	
+$DNS2 				= ""                                	
 $MTU 				= "1500"                                        	
-$even_volname		= $even_svmname + "_usersdefpaths"               
+$even_volname		= $even_svmname + "_"               
 $DCs				= ($DNS1,$DNS2)                                 	
 $ClientACL			= "0.0.0.0/0"                              	
 
 
-$odd_svmname            	= "pcu012fs26"
-$odd_rootvolume         	= "pcu012fs26_root"
-$odd_prootaggr_location	= "pcuntap02c_ssd_aggr2"
-$odd_srootaggr_location 	= "pcuntap02d_ssd_aggr2"
+$odd_svmname            	= ""
+$odd_rootvolume         	= ""
+$odd_prootaggr_location	= ""
+$odd_srootaggr_location 	= ""
 $odd_Computername 			= $odd_svmname
-$odd_Pnode 				= "pcuntap02c"
-$odd_snode 				= "pcuntap02d"
-$odd_SVM_IP 				= "10.135.12.26"
-$odd_volname				= $odd_svmname + "_usersdefpaths"
+$odd_Pnode 				= ""
+$odd_snode 				= ""
+$odd_SVM_IP 				= ""
+$odd_volname				= $odd_svmname + "_"
 
-$evencluster				=	"pcuntap01"
-$oddcluster			=	"pcuntap02"
-$drcluster				=	"pcuntap08"
+$evencluster				=	""
+$oddcluster			=	""
+$drcluster				=	""
 
 
 ######################################################
@@ -101,8 +101,8 @@ Add-NcCifsServer -VserverContext $even_svmname -name $even_computername -Domain 
 
 
 switch -Wildcard ($Domainname){
-'asp1.yardi.com' {$message = 'Insert Credentials for ASP1'}
-"*.ysicloud.com" {$message = 'Insert Credentials for YSICLOUD'}
+'.com' {$message = 'Insert Credentials for Domain'}
+"*.com" {$message = 'Insert Credentials for Domain'}
 }
 
 $creds = Get-Credential -Message $message
@@ -205,8 +205,8 @@ Add-NcCifsServer -VserverContext $odd_svmname -name $odd_computername -Domain $d
 
 
 switch -Wildcard ($Domainname){
-'asp1.yardi.com' {$message = 'Insert Credentials for ASP1'}
-"*.ysicloud.com" {$message = 'Insert Credentials for YSICLOUD'}
+'.com' {$message = 'Insert Credentials for DOMAIN'}
+"*.ysicloud.com" {$message = 'Insert Credentials for DOMAIN'}
 }
 
 $creds = Get-Credential -Message $message
@@ -217,16 +217,7 @@ foreach ($DC in $DCs)
 		$session = New-PSSession -ComputerName $DC -Credential $creds
 		if ($session)
 		{
-		##Add-DnsServerResourceRecordA -Name $Computername -ZoneName $Domainname -AllowUpdateAny -IPv4Address $SVM_IP -TimeToLive 01:00:00   			#### Works directly on DC
-			Invoke-Command -Session $session {Add-DnsServerResourceRecordA -Name pca201fs25 -IPv4Address 10.97.201.25 -ZoneName InvestorCafePC.yardi.cloud} #### Works directly on 'any' ysicloud server
-			##Get-DnsServerResourceRecord -Name tjfs181 -ZoneName InvestorCafePC.yardi.cloud
-			##Add-DnsServerResourceRecordA -Name pca201fs25 -IPv4Address 10.97.201.25 -ZoneName InvestorCafePC.yardi.cloud
-			$session | Remove-PSSession; break
-		}
-	}
-}
-#################
-
+		
 "";">>>>> STEP 10/15: Configure default Export Rule"	
 
 New-NcExportRule -VserverContext $odd_svmname -protocol cifs -ReadOnlySecurityFlavor any -ReadWriteSecurityFlavor any -ClientMatch $ClientACL -Index 1 -EnableSetUid -policy default
@@ -285,18 +276,3 @@ confirm-ncvserverpeer -PeerVserver $sourceVserver -Vserver $destinationVserver
 New-NcSnapmirror -SourceCluster $sourceCluster -DestinationCluster $destinationCluster -SourceVserver $sourceVserver -SourceVolume $sourcevolume -DestinationVserver $destinationVserver -DestinationVolume $destinationvolume -schedule fs_snapmirror -type dp -policy MirrorAllSnapshots
 Invoke-NcSnapmirrorInitialize -DestinationVserver $destinationVserver -DestinationVolume $destinationvolume
 
-
-"";">>>>> STEP 16/15: Create Stellar objects"
-
-
-##Add-DnsServerResourceRecordA -Name pcv087fs25 -ZoneName OConnorPC.yardi.cloud -AllowUpdateAny -IPv4Address 10.185.87.25 -TimeToLive 01:00:00
-
-
-
-net port mod -node pcvntap02c -port e0e -mtu 1500 -autonegotiate-admin true -duplex-admin auto -speed-admin auto -flowcontrol-admin none -up-admin true -ipspace Default -ignore-health-status false
-
-net port mod -node pcvntap01c -port e0e -mtu 1500 -autonegotiate-admin true -duplex-admin auto -speed-admin auto -flowcontrol-admin none -up-admin true -ipspace Default -ignore-health-status false -autorevert-delay
-
-
-
-Yardi123@welcome@123
